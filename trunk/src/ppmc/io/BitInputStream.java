@@ -1,5 +1,5 @@
 
-package compressor.io;
+package io;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,16 +11,15 @@ public class BitInputStream {
     private int[] buffer;
     private int[] bigBuffer;
     private int head, tail, next1, next2, bigIndex;
-    private static final int BUFFER_SIZE = 128, BIG_BUFFER_SIZE = 1024;
+    private static final int BUFFER_SIZE = 1024, BIG_BUFFER_SIZE = 32;
     private boolean jumpBigrama;
 
     /**
      *
      * @param pathName Caminho do arquivo de onde os bits serao lidos
-     * @param jumpBigrama true Para remover o delimitador inserido pelo Encoder
      * @throws java.io.IOException
      */
-    public BitInputStream(String pathName, boolean jumpBigrama) throws IOException{
+    public BitInputStream(String pathName) throws IOException{
         in = new FileInputStream(pathName);
         buffer = new int[BUFFER_SIZE];
         bigBuffer = new int[BIG_BUFFER_SIZE];
@@ -28,7 +27,7 @@ public class BitInputStream {
         bigIndex = BIG_BUFFER_SIZE;
         next1 = readByte();
         next2 = readByte();
-        this.jumpBigrama = jumpBigrama;
+        this.jumpBigrama = false;
         fillBuffer();
     }
 
@@ -69,11 +68,12 @@ public class BitInputStream {
             int aux = in.read(b);
             if(aux < 0){
                 bigBuffer[0] = -1;
-            } else if(aux < BIG_BUFFER_SIZE){
-                b[aux] = -1;
             }
             for(int i = 0; i < aux; i++){
                 bigBuffer[i] = (b[i] < 0)? b[i]+256 : b[i];
+            }
+            if(aux < BIG_BUFFER_SIZE){
+                bigBuffer[aux] = -1;
             }
             bigIndex = 0;
         }
