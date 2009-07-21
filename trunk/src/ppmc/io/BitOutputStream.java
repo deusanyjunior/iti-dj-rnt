@@ -109,7 +109,7 @@ public class BitOutputStream {
      */
     public void close(){             
         try {
-            out.write(bigBuffer);
+            out.write(bigBuffer, 0, bigIndex);
             out.close();
         } catch (IOException ex) {}
     }
