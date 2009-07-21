@@ -16,7 +16,7 @@ public class BitOutputStream {
     private int[] buffer;
     private byte[] bigBuffer;
     private int head, tail, bigIndex;
-    private static final int BUFFER_SIZE = 128, BIG_BUFFER_SIZE = 128;
+    private static final int BUFFER_SIZE = 1024, BIG_BUFFER_SIZE = 1024;
 
     /**
      *
@@ -107,33 +107,8 @@ public class BitOutputStream {
      * Coloca o bigrama delimitador '01' e completa o ultimo byte com '1's,
      * depois imprime os bytes restantes e fecha o arquivo
      */
-    public void close(){
-        
-        buffer[tail++] = 0;
-        tail = tail%BUFFER_SIZE;
-        buffer[tail++] = 1;
-        tail = tail%BUFFER_SIZE;
-        while(((tail-head+BUFFER_SIZE)%BUFFER_SIZE)%8 != 0){
-            buffer[tail++] = 1;
-            tail = tail%BUFFER_SIZE;
-        }
-        
-        while((tail-head+BUFFER_SIZE)%BUFFER_SIZE >= 8){
-            int soma = 0, mul = 128, b = 8;
-            while(b-- > 0){
-                soma += mul*buffer[head++];
-                head = head%BUFFER_SIZE;
-                mul /= 2;
-            }
-            try {
-                writeByte(soma);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
+    public void close(){             
         try {
-            if(bigIndex < BIG_BUFFER_SIZE)
-                bigBuffer[bigIndex] = -1;
             out.write(bigBuffer);
             out.close();
         } catch (IOException ex) {}

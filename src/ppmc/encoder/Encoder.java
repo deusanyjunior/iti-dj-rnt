@@ -28,7 +28,7 @@ public class Encoder {
             contextos[i].setProximoContexto(contextos[i-1]);
         }
         BitInputStream bis = new BitInputStream(input);
-        int lido;
+        int lido = 0;
         String contexto = "";
         try{
             for(int i = 1; i < maiorContexto+1; i++){
@@ -36,7 +36,7 @@ public class Encoder {
                 contextos[i].codifica(contexto, lido);
                 contexto += (char)lido;
             }
-            while(true){
+            while(lido < maiorSimbolo + 1){
                 lido = bis.nextBits(nBitsPorSimbolo);
                 contextos[maiorContexto+1].codifica(contexto, lido);
                 contexto = contexto.substring(1) + (char)lido;

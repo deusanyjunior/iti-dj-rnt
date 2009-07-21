@@ -26,11 +26,11 @@ public class Contexto {
     }
 
     public void codifica(String contexto, int simbolo) throws IOException {
-        if(debug) System.out.printf("Buscando %c no contexto '%s'\n", simbolo, contexto);
+//        if(debug) System.out.printf("Buscando %c no contexto '%s'\n", simbolo, contexto);
         int[] freqs = map.get(contexto);
         if(freqs == null){
             proximo.codifica(contexto.substring(1), simbolo);
-            int[] novaFreqs = new int[maxSimbolos + 1];
+            int[] novaFreqs = new int[maxSimbolos + 2]; // escape + EOF
             novaFreqs[simbolo]++;
             novaFreqs[maxSimbolos]++;
             map.put(contexto, novaFreqs);
@@ -62,8 +62,8 @@ public class Contexto {
         }
     }
 
-    public int getSimbolo(String contexto){
-        if(debug) System.out.printf("Procurando contexto '%s'\n", contexto);
+    public int getSimbolo(String contexto) throws IOException {
+//        if(debug) System.out.printf("Procurando contexto '%s'\n", contexto);
         int[] freqs = map.get(contexto);
         int simbolo;
         if(freqs == null){
@@ -73,8 +73,8 @@ public class Contexto {
             novaFreqs[maxSimbolos]++;
             map.put(contexto, novaFreqs);
         } else {
-            if(debug) System.out.printf("Contexto '%s' encotrado\n", contexto);
-            int low, arithLow, total = 0;
+//            if(debug) System.out.printf("Contexto '%s' encotrado\n", contexto);
+            int low, arithLow, high, total = 0;
             for(int i = 0; i < freqs.length; i++){
                 total += freqs[i];
             }
@@ -83,17 +83,23 @@ public class Contexto {
             simbolo = 0;            
             arithLow = arithDecoder.getCurrentSymbolCount(total);
             
-            while(low < arithLow && simbolo < maxSimbolos){
+            while(low + freqs[simbolo] <= arithLow && simbolo < maxSimbolos){
                 low += freqs[simbolo++];
             }
+            while(freqs[simbolo] == 0){
+                simbolo++;
+            }
+            high = low + freqs[simbolo];
+            arithDecoder.removeSymbolFromStream(low, high, total);
             freqs[simbolo]++;
-            map.put(contexto, freqs);
             if(simbolo == maxSimbolos) { // escape
                 if(debug) System.out.printf("escape decodificado no contexto '%s' com low = %d arith = %d total = %d\n", contexto, low, arithLow, total);
                 simbolo = proximo.getSimbolo(contexto.substring(1));
+                freqs[simbolo]++;
             } else {
                 if(debug) System.out.printf("%c decodificado no contexto '%s' com low = %d arith = %d total = %d\n", simbolo, contexto, low, arithLow, total);
             }
+            map.put(contexto, freqs);
         }
         return simbolo;
     }
