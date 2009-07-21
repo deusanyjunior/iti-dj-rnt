@@ -11,7 +11,7 @@ public class BitInputStream {
     private int[] buffer;
     private int[] bigBuffer;
     private int head, tail, next1, next2, bigIndex;
-    private static final int BUFFER_SIZE = 1024, BIG_BUFFER_SIZE = 32;
+    private static final int BUFFER_SIZE = 1024, BIG_BUFFER_SIZE = 1024;
     private boolean jumpBigrama;
 
     /**
@@ -48,13 +48,14 @@ public class BitInputStream {
         fillBuffer();
     }
 
-    public int nextBits(int nBits) throws IOException{
-        int soma = 0, mul = (int)Math.pow(2, nBits-1);
+    public int nextBits(int nBits) throws IOException {
+        int soma = 0, mul = (int)Math.pow(2, nBits-1), EOF = 2*mul+1;
         while(nBits-- > 0){
             if(head == tail)
                 fillBuffer();
-            if(buffer[head] == -1)
-                throw new IOException("EOF");
+            if(buffer[head] == -1){
+                return EOF;
+            }
             soma += mul*buffer[head++];
             head = head%BUFFER_SIZE;
             mul /= 2;
@@ -72,7 +73,7 @@ public class BitInputStream {
             for(int i = 0; i < aux; i++){
                 bigBuffer[i] = (b[i] < 0)? b[i]+256 : b[i];
             }
-            if(aux < BIG_BUFFER_SIZE){
+            if(aux >= 0 && aux < BIG_BUFFER_SIZE){
                 bigBuffer[aux] = -1;
             }
             bigIndex = 0;

@@ -19,7 +19,7 @@ public class ContextoZero extends Contexto {
     }
 
     @Override
-    public int getSimbolo(String contexto) {
+    public int getSimbolo(String contexto) throws IOException {
         contexto = " "; // para nao da erro com o contexto.substring(1);
         return super.getSimbolo(contexto);
     }

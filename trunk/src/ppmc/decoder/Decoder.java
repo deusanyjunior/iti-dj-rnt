@@ -5,6 +5,7 @@ import api.Contexto;
 import api.ContextoMenosUm;
 import api.ContextoZero;
 import codificador.ArithDecoder;
+import compressor.io.BitOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -15,6 +16,7 @@ public class Decoder {
     public Decoder(int nBitsPorSimbolo, int maiorContexto, String input, String output) throws IOException {
         int maiorSimbolo = (int)Math.pow(2, nBitsPorSimbolo);
         Contexto.setArithDecoder(new ArithDecoder(new FileInputStream(input)));
+        BitOutputStream bos = new BitOutputStream(output);
         contextos = new Contexto[maiorContexto+2];
         contextos[0] = new ContextoMenosUm(maiorSimbolo);
         contextos[1] = new ContextoZero(maiorSimbolo);
@@ -23,18 +25,24 @@ public class Decoder {
             contextos[i] = new Contexto(maiorSimbolo);
             contextos[i].setProximoContexto(contextos[i-1]);
         }
-        int lido;
-        String contexto = "";
-        lido =  contextos[1].getSimbolo(contexto);
-        contexto += (char)lido;
-        for(int i = 2; i < maiorContexto + 1; i++) {
-            lido =  contextos[i].getSimbolo(contexto);
+        try{
+            int lido;
+            String contexto = "";
+            lido =  contextos[1].getSimbolo(contexto);
             contexto += (char)lido;
-        }
-        for (int i = 0; i < 14; i++) {
-//        while(true) {
-            lido =  contextos[maiorContexto+1].getSimbolo(contexto);
-            contexto = contexto.substring(1) + (char)lido;
+            bos.print(lido, nBitsPorSimbolo);
+            for(int i = 2; i < maiorContexto + 1; i++) {
+                lido =  contextos[i].getSimbolo(contexto);
+                contexto += (char)lido;
+                bos.print(lido, nBitsPorSimbolo);
+            }
+            while(true) {
+                lido =  contextos[maiorContexto+1].getSimbolo(contexto);
+                contexto = contexto.substring(1) + (char)lido;
+                bos.print(lido, nBitsPorSimbolo);
+            }
+        }catch (IOException ex){
+            bos.close();            
         }
     }
 
