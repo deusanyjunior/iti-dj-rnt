@@ -22,26 +22,32 @@ public class ContextoMenosUm extends Contexto {
 
     @Override
     public void codifica(String contexto, int simbolo, boolean nosAnteriores[]) throws IOException {
-        if(simbolo == freqs.length){
-            simbolo--;
-            if(debug) System.out.printf("Codificando EOF ");
-        } else {
-            if(debug) System.out.printf("Codificando %c no contexto -1 ", simbolo);
-        }
+
         int low = 0, high;
 
-        for(int i = 0; i < simbolo; i++){
-            low += freqs[i];
-        }
+        if(simbolo == freqs.length)
+            simbolo = maxSimbolos;
+        
+        for(int i = 0; i < simbolo; i++)
+            low += freqs[i];        
 
         high = low + freqs[simbolo];
-        //codifica com low high total
-        if(debug) System.out.printf("com low = %d high = %d total = %d\n", low, high, total);
+
         arithEncoder.encode(low, high, total);
-        if(simbolo == freqs.length - 1)
+
+        /* Debug */
+        if(debug && simbolo == maxSimbolos)
+            System.out.printf("Codificando EOF com low = %d high = %d total = %d\n", low, high, total);
+        if(debug && simbolo != maxSimbolos)
+            System.out.printf("Codificando %c no contexto -1 com low = %d high = %d total = %d\n", simbolo, low, high, total);
+        /* Debug */
+        
+        if(simbolo == maxSimbolos)            
             throw new IOException("EOF");
+        
         freqs[simbolo] = 0;
         total--;
+        
     }
 
     @Override
@@ -51,27 +57,32 @@ public class ContextoMenosUm extends Contexto {
 
     @Override
     public int getSimbolo(String contexto, boolean nosAnteriores[]) throws IOException {
-        int low, arithLow, high, simbolo;
-        low = 0;
-        simbolo = 0;
-        arithLow = arithDecoder.getCurrentSymbolCount(total);
-        while(low < arithLow && simbolo < maxSimbolos){
-            low += freqs[simbolo++];
-        }
-
-//        if(simbolo == maxSimbolos + 1)
-//            simbolo = maxSimbolos;
         
-        while (simbolo < maxSimbolos && freqs[simbolo] == 0) {
-            simbolo++;
-        }
-        if(simbolo == maxSimbolos)
-            throw new IOException("EOF");
+        int simbolo = 0, low = 0, arithLow, high, eof = maxSimbolos;
+        
+        arithLow = arithDecoder.getCurrentSymbolCount(total);
+
+        while(low < arithLow || freqs[simbolo] == 0)
+            low += freqs[simbolo++];       
+        
         high = low + freqs[simbolo];
+
+        /* Debug */
+        if(debug && simbolo == eof)
+            System.out.printf("EOF decodificado com low = %d arith = %d total = %d\n", low, arithLow, total);
+        if(debug && simbolo != eof)
+            System.out.printf("%c decodificado no contexto -1 com low = %d arith = %d total = %d\n", simbolo, low, arithLow, total);
+        /* Debug */
+        
+        if(simbolo == eof)
+            throw new IOException("EOF");
+        
         arithDecoder.removeSymbolFromStream(low, high, total);
-        if(debug) System.out.printf("%c decodificado no contexto -1 com low = %d arith = %d total = %d\n", simbolo, low, arithLow, total);
+        
         freqs[simbolo] = 0;
+
         total--;
+        
         return simbolo;
     }
 
