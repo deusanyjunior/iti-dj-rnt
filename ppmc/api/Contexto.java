@@ -5,6 +5,7 @@ import codificador.ArithDecoder;
 import codificador.ArithEncoder;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 
 public class Contexto {
@@ -12,6 +13,7 @@ public class Contexto {
     protected HashMap<String, int[]> map;
     protected Contexto proximo;
     protected int maxSimbolos;
+    protected Node trie;
     protected static boolean debug;
     protected static ArithEncoder arithEncoder;
     protected static ArithDecoder arithDecoder;
@@ -25,23 +27,20 @@ public class Contexto {
         this.proximo = proximo;
     }
     
-    public void codifica(String contexto, int simbolo) throws IOException {
-        codifica(contexto, simbolo, new boolean[maxSimbolos + 2]);
+    public void codifica(int simbolo, LinkedList<Integer> contexto, int off) throws IOException {
+        codifica(simbolo, contexto, off, new boolean[maxSimbolos + 2]);
     }
 
-    public void codifica(String contexto, int simbolo, boolean nosAnteriores[]) throws IOException {
+    public void codifica(int simbolo, LinkedList<Integer> contexto, int off, boolean nosAnteriores[]) throws IOException {
         
         int aCodificar = simbolo, low = 0, high = 0, total = 0, escape = maxSimbolos;
-        int[] freqs = map.get(contexto);
+        Node noContexto = trie.getContexto(contexto, off);
         
-        if(freqs == null){
-            proximo.codifica(contexto.substring(1), simbolo, nosAnteriores);
-            freqs = new int[maxSimbolos + 2]; // escape + EOF
-            freqs[simbolo] = 1;
-            freqs[escape] = 1;
-            map.put(contexto, freqs);
+        if(noContexto == null){           
+            proximo.codifica(simbolo, contexto, off+1, nosAnteriores);
+            trie.inserir(simbolo, escape, contexto, off);
         } else {
-            if(freqs[simbolo] == 0)
+            if(noContexto.getFilho(simbolo) == null)
                 aCodificar = escape;
             
             for(int i = 0; i < aCodificar; i++){
