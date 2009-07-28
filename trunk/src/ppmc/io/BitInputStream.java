@@ -11,15 +11,17 @@ public class BitInputStream {
     private int[] buffer;
     private int[] bigBuffer;
     private int head, tail, next1, next2, bigIndex;
-    private static final int BUFFER_SIZE = 1024, BIG_BUFFER_SIZE = 1024;
+    private static final int BUFFER_SIZE = 128, BIG_BUFFER_SIZE = 1024;
     private boolean jumpBigrama;
+    int cont;
 
     /**
      *
      * @param pathName Caminho do arquivo de onde os bits serao lidos
+     * @param jumpBigrama true Para remover o delimitador inserido pelo Encoder
      * @throws java.io.IOException
      */
-    public BitInputStream(String pathName) throws IOException{
+    public BitInputStream(String pathName, boolean jumpBigrama) throws IOException{
         in = new FileInputStream(pathName);
         buffer = new int[BUFFER_SIZE];
         bigBuffer = new int[BIG_BUFFER_SIZE];
@@ -27,7 +29,7 @@ public class BitInputStream {
         bigIndex = BIG_BUFFER_SIZE;
         next1 = readByte();
         next2 = readByte();
-        this.jumpBigrama = false;
+        this.jumpBigrama = jumpBigrama;
         fillBuffer();
     }
 
@@ -67,6 +69,7 @@ public class BitInputStream {
         if(bigIndex == bigBuffer.length){
             byte b[] = new byte[BIG_BUFFER_SIZE];
             int aux = in.read(b);
+            cont+= (aux > 0)?aux:0;
             if(aux < 0){
                 bigBuffer[0] = -1;
             }

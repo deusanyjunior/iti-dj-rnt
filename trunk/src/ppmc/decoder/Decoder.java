@@ -5,7 +5,7 @@ import api.Contexto;
 import api.ContextoMenosUm;
 import api.ContextoZero;
 import codificador.ArithDecoder;
-import compressor.io.BitOutputStream;
+import io.BitOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 
