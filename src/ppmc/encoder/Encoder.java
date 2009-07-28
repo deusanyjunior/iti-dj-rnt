@@ -27,7 +27,7 @@ public class Encoder {
             contextos[i] = new Contexto(maiorSimbolo);
             contextos[i].setProximoContexto(contextos[i-1]);
         }
-        BitInputStream bis = new BitInputStream(input);
+        BitInputStream bis = new BitInputStream(input, false);
         int lido = 0;
         String contexto = "";
         try{
