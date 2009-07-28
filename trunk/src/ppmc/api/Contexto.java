@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 public class Contexto {
 
-    protected HashMap<String, int[]> map;
+    protected HashMap<String, HashMap<Integer, Integer>> map;
     protected Contexto proximo;
     protected int maxSimbolos;
     protected static boolean debug;
@@ -17,14 +17,26 @@ public class Contexto {
     protected static ArithDecoder arithDecoder;
 
     public Contexto(int maiorSimbolo){
-        map = new HashMap<String, int[]>();
+        map = new HashMap<String, HashMap<Integer, Integer>>();
         this.maxSimbolos = maiorSimbolo;
     }
 
     public void setProximoContexto(Contexto proximo){
         this.proximo = proximo;
     }
-    
+
+    public void inserirContexto(String contexto, int simbolo, int escape){
+        HashMap<Integer, Integer> freqs = new HashMap<Integer, Integer>();
+        freqs.put(simbolo, 1);
+        freqs.put(escape, 1);
+        map.put(contexto, freqs);
+    }
+
+    public void incContadorDoSimbolo(HashMap<Integer, Integer> freqs, int simbolo){
+        int contador = (freqs.get(simbolo) != null)? freqs.get(simbolo)+1 : 1;
+        freqs.put(simbolo, contador);
+    }
+
     public void codifica(String contexto, int simbolo) throws IOException {
         codifica(contexto, simbolo, new boolean[maxSimbolos + 2]);
     }
@@ -32,31 +44,30 @@ public class Contexto {
     public void codifica(String contexto, int simbolo, boolean nosAnteriores[]) throws IOException {
         
         int aCodificar = simbolo, low = 0, high = 0, total = 0, escape = maxSimbolos;
-        int[] freqs = map.get(contexto);
+        HashMap<Integer, Integer> freqs = map.get(contexto);
         
         if(freqs == null){
             proximo.codifica(contexto.substring(1), simbolo, nosAnteriores);
-            freqs = new int[maxSimbolos + 2]; // escape + EOF
-            freqs[simbolo] = 1;
-            freqs[escape] = 1;
-            map.put(contexto, freqs);
+            inserirContexto(contexto, simbolo, escape);
         } else {
-            if(freqs[simbolo] == 0)
+            if(freqs.get(simbolo) == null)                
                 aCodificar = escape;
             
             for(int i = 0; i < aCodificar; i++){
-                if(freqs[i] > 0 && !nosAnteriores[i]){
-                    low += freqs[i];
+                if(freqs.get(i) != null && !nosAnteriores[i]){
+                    low += freqs.get(i);
                     nosAnteriores[i] = true;
                 }
             }
             
-            high = low + freqs[aCodificar];
+            high = low + freqs.get(aCodificar);
             total = low;
+
             
-            for(int i = aCodificar; i < freqs.length; i++){
-                if(freqs[i] > 0 && !nosAnteriores[i]){
-                    total += freqs[i];
+
+            for(int i = aCodificar; i < escape+2; i++){
+                if(freqs.get(i) != null && !nosAnteriores[i]){
+                    total += freqs.get(i);
                     nosAnteriores[i] = true;
                 }
             }
@@ -67,9 +78,9 @@ public class Contexto {
             
             if(aCodificar == escape) {
                 proximo.codifica(contexto.substring(1), simbolo, nosAnteriores);
-                freqs[escape]++;
+                incContadorDoSimbolo(freqs, escape);
             }
-            freqs[simbolo]++;            
+            incContadorDoSimbolo(freqs, simbolo);
             map.put(contexto, freqs);
         }
         
@@ -91,33 +102,30 @@ public class Contexto {
 
         int simbolo = 0, escape = maxSimbolos;
         int low = 0, arith = 0, high = 0, total = 0;
-        int[] freqs = map.get(contexto);
+        HashMap<Integer, Integer> freqs = map.get(contexto);
         
         if(freqs == null){
             simbolo = proximo.getSimbolo(contexto.substring(1), nosAnteriores);
-            int[] novaFreqs = new int[maxSimbolos + 2];
-            novaFreqs[simbolo] = 1;
-            novaFreqs[escape] = 1;
-            map.put(contexto, novaFreqs);
+            inserirContexto(contexto, simbolo, escape);
         } else {
-            for(int i = 0; i < freqs.length; i++)
-                if(freqs[i] > 0 && !nosAnteriores[i])
-                    total += freqs[i];
+            for(int i = 0; i < escape+2; i++)
+                if(freqs.get(i) != null && !nosAnteriores[i])
+                    total += freqs.get(i);
                
             arith = arithDecoder.getCurrentSymbolCount(total);
 
-            while(nosAnteriores[simbolo] || low + freqs[simbolo] <= arith){
+            while(nosAnteriores[simbolo] || freqs.get(simbolo) == null || low + freqs.get(simbolo) <= arith){
                 if(nosAnteriores[simbolo])
                     simbolo++;
-                else
-                    low += freqs[simbolo++];
+                else if(freqs.get(simbolo++) != null)
+                    low += freqs.get(simbolo-1);
             }
             
-            high = low + freqs[simbolo];
+            high = low + freqs.get(simbolo);
             
             arithDecoder.removeSymbolFromStream(low, high, total);
             
-            freqs[simbolo]++;
+            incContadorDoSimbolo(freqs, simbolo);
             
             /* Debug */
             if(debug && simbolo == escape)
@@ -128,12 +136,12 @@ public class Contexto {
 
             if(simbolo == escape) {
                 for(int i = 0; i < escape; i++)
-                    if(freqs[i] > 0)
+                    if(freqs.get(i) != null)
                         nosAnteriores[i] = true;                
                 
                 simbolo = proximo.getSimbolo(contexto.substring(1), nosAnteriores);                
 
-                freqs[simbolo]++;                
+                incContadorDoSimbolo(freqs, simbolo);
             }
             
             map.put(contexto, freqs);
